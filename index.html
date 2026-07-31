@@ -388,7 +388,7 @@
 <body>
 
   <header>
-    <div class="eyebrow">906 five‑minute chunks · one 70‑hour run</div>
+    <div class="eyebrow"><span id="totalChunksEyebrow">906</span> five‑minute chunks · one 70‑hour run</div>
     <h1>Random Grab</h1>
     <p class="subhead">Hit the button. Get flung to a random slice of the full Mario&nbsp;Kart&nbsp;World playthrough, re‑encoded in glorious unnecessary 8K.</p>
   </header>
@@ -407,7 +407,7 @@
     <div class="result" id="result">
       <div class="result-head">
         <div class="result-head-left">
-          <div class="chunk-badge">Chunk <span id="chunkNum">—</span> <span class="chunk-of">of 906</span></div>
+          <div class="chunk-badge">Chunk <span id="chunkNum">—</span> <span class="chunk-of">of <span id="totalChunks">906</span></span></div>
           <div class="day-part" id="dayPart">—</div>
         </div>
         <button class="activity" id="activityBtn" type="button" aria-haspopup="dialog">—</button>
@@ -462,6 +462,9 @@ async function loadData(){
   TOTAL_SECONDS = data.total_seconds || 1;
   TIMELINE = data.timeline || [];
   buildTimelineList();
+
+  const totalChunksEls = document.querySelectorAll('#totalChunks, #totalChunksEyebrow');
+  totalChunksEls.forEach(el => el.textContent = CLIPS.length);
 }
 
 function fmtHMS(sec){
