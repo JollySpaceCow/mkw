@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mario Kart World — Random Grab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --asphalt:#14161C;
+    --asphalt-2:#1B1E27;
+    --line:#2A2E3A;
+    --off-white:#EDEAE2;
+    --muted:#9A9CA8;
+    --flag-red:#E4402C;
+    --flag-red-dim:#8f2a1f;
+    --amber:#D8A24A;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;}
+  html{overflow:hidden;}
+  body{
+    background:var(--asphalt);
+    color:var(--off-white);
+    font-family:'Inter',sans-serif;
+    height:100vh;
+    display:grid;
+    grid-template-rows:auto 1fr auto;
+    align-items:stretch;
+    justify-items:center;
+    padding:10px 20px 8px;
+    position:relative;
+    overflow:hidden;
+  }
+
+  /* subtle checker strip top */
+  body::before{
+    content:"";
+    position:fixed;
+    top:0; left:0; right:0;
+    height:6px;
+    background:repeating-linear-gradient(90deg,var(--off-white) 0 12px, var(--asphalt) 12px 24px);
+    opacity:.35;
+    z-index:5;
+  }
+
+  .eyebrow{
+    font-family:'Oswald',sans-serif;
+    text-transform:uppercase;
+    letter-spacing:.3em;
+    font-size:.62rem;
+    color:var(--amber);
+    margin-bottom:2px;
+    text-align:center;
+  }
+
+  h1{
+    font-family:'Oswald',sans-serif;
+    font-weight:700;
+    font-size:clamp(1.3rem,3vw,1.9rem);
+    letter-spacing:-.01em;
+    margin:0;
+    text-align:center;
+    line-height:1.05;
+  }
+
+  .subhead{
+    display:none;
+  }
+
+  .stage{
+    width:100%;
+    max-width:1180px;
+    height:100%;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    min-height:0;
+  }
+
+  .pre-launch{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    width:100%;
+    max-width:420px;
+  }
+  .pre-launch.hidden{display:none;}
+
+  /* countdown lights */
+  .lights{
+    display:flex;
+    gap:14px;
+    margin-bottom:24px;
+    height:26px;
+  }
+  .light{
+    width:26px;height:26px;border-radius:50%;
+    background:var(--flag-red-dim);
+    box-shadow: inset 0 0 0 3px rgba(0,0,0,.25);
+    transition:background .15s ease, box-shadow .15s ease;
+  }
+  .light.on{
+    background:var(--flag-red);
+    box-shadow:0 0 18px 4px rgba(228,64,44,.55), inset 0 0 0 3px rgba(0,0,0,.25);
+  }
+  .light.go{
+    background:#3FBE5C;
+    box-shadow:0 0 22px 6px rgba(63,190,92,.6), inset 0 0 0 3px rgba(0,0,0,.25);
+  }
+
+  button#spin{
+    font-family:'Oswald',sans-serif;
+    font-weight:600;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    font-size:1.15rem;
+    color:var(--asphalt);
+    background:var(--off-white);
+    border:none;
+    padding:20px 52px;
+    border-radius:999px;
+    cursor:pointer;
+    transition:transform .12s ease, background .12s ease;
+    box-shadow:0 6px 0 var(--line);
+  }
+  button#spin:hover{background:var(--amber);}
+  button#spin:active{transform:translateY(4px);box-shadow:0 2px 0 var(--line);}
+  button#spin:disabled{opacity:.5;cursor:not-allowed;}
+  button#spin:focus-visible{outline:3px solid var(--flag-red);outline-offset:3px;}
+
+  .result{
+    width:100%;
+    height:100%;
+    display:none;
+    flex-direction:column;
+    min-height:0;
+  }
+  .result.show{display:flex;}
+
+  .result-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:12px;
+    margin-bottom:8px;
+    flex-shrink:0;
+  }
+
+  .result-head-left{
+    display:flex;
+    align-items:baseline;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+
+  .chunk-of{
+    color:var(--muted);
+    font-weight:400;
+    font-size:1rem;
+  }
+
+  .chunk-badge{
+    font-family:'Oswald',sans-serif;
+    font-weight:600;
+    font-size:1.4rem;
+    color:var(--off-white);
+    white-space:nowrap;
+  }
+  .chunk-badge span{color:var(--amber);}
+
+  .day-part{
+    font-family:'Inter',sans-serif;
+    font-size:.85rem;
+    color:var(--muted);
+    letter-spacing:.02em;
+    white-space:nowrap;
+  }
+
+  .activity{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    font-family:'Oswald',sans-serif;
+    font-weight:500;
+    font-size:.85rem;
+    letter-spacing:.03em;
+    text-transform:uppercase;
+    color:var(--asphalt);
+    background:var(--amber);
+    padding:5px 14px;
+    border-radius:999px;
+    border:none;
+    cursor:pointer;
+    flex-shrink:0;
+    transition:background .12s ease, transform .12s ease;
+  }
+  .activity:hover{background:#e8b563;transform:translateY(-1px);}
+  .activity:focus-visible{outline:2px solid var(--flag-red);outline-offset:3px;}
+  .activity::after{
+    content:"↗ full timeline";
+    font-weight:400;
+    font-size:.7rem;
+    text-transform:none;
+    opacity:.65;
+    letter-spacing:0;
+  }
+
+  .fullvid-link{
+    display:inline-block;
+    margin-top:4px;
+    font-size:.75rem;
+    color:var(--muted);
+    text-decoration:none;
+    border-bottom:1px dashed var(--line);
+    flex-shrink:0;
+  }
+  .fullvid-link:hover{color:var(--amber);border-color:var(--amber);}
+
+  .frame-wrap{
+    position:relative;
+    width:min(100%, calc((100vh - 220px) * 16 / 9));
+    aspect-ratio:16/9;
+    max-height:100%;
+    margin:0 auto;
+    background:#000;
+    border-radius:10px;
+    overflow:hidden;
+    border:1px solid var(--line);
+  }
+  .frame-wrap iframe{
+    position:absolute;
+    top:0; left:0;
+    width:100% !important;
+    height:100% !important;
+    border:0;
+    display:block;
+  }
+  #player{
+    width:100%;
+    height:100%;
+  }
+
+  .progress-label{
+    display:flex;
+    justify-content:space-between;
+    font-size:.72rem;
+    color:var(--muted);
+    margin:8px 0 4px;
+    font-variant-numeric:tabular-nums;
+    flex-shrink:0;
+  }
+  .progress-track{
+    width:100%;
+    height:8px;
+    background:var(--asphalt-2);
+    border:1px solid var(--line);
+    border-radius:999px;
+    overflow:hidden;
+    cursor:pointer;
+    position:relative;
+    flex-shrink:0;
+  }
+  .progress-track:hover{height:12px;margin-top:-2px;margin-bottom:-2px;}
+  .progress-track:focus-visible{outline:2px solid var(--flag-red);outline-offset:3px;}
+  .progress-fill{
+    height:100%;
+    background:linear-gradient(90deg,var(--flag-red),var(--amber));
+    border-radius:999px;
+    transition:width .3s ease;
+  }
+
+  .scrub-hint{
+    font-size:.68rem;
+    color:var(--muted);
+    text-align:center;
+    margin-top:4px;
+    opacity:.75;
+    flex-shrink:0;
+  }
+
+  footer{
+    font-size:.65rem;
+    color:var(--muted);
+    text-align:center;
+    line-height:1.2;
+  }
+  footer a{color:var(--amber);}
+
+  /* modal */
+  .modal-overlay{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(10,11,15,.75);
+    backdrop-filter:blur(2px);
+    z-index:50;
+    align-items:flex-start;
+    justify-content:center;
+    padding:6vh 16px;
+  }
+  .modal-overlay.show{display:flex;}
+
+  .modal{
+    background:var(--asphalt-2);
+    border:1px solid var(--line);
+    border-radius:14px;
+    width:100%;
+    max-width:640px;
+    max-height:86vh;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+  }
+
+  .modal-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:20px 22px;
+    border-bottom:1px solid var(--line);
+  }
+  .modal-header h2{
+    font-family:'Oswald',sans-serif;
+    font-size:1.2rem;
+    font-weight:600;
+    margin:0;
+  }
+  .modal-close{
+    background:none;
+    border:none;
+    color:var(--muted);
+    font-size:1.1rem;
+    cursor:pointer;
+    padding:4px 8px;
+    line-height:1;
+  }
+  .modal-close:hover{color:var(--off-white);}
+  .modal-close:focus-visible{outline:2px solid var(--flag-red);outline-offset:2px;}
+
+  .timeline-list{
+    list-style:none;
+    margin:0;
+    padding:8px 10px;
+    overflow-y:auto;
+  }
+  .timeline-item{
+    display:block;
+    width:100%;
+    text-align:left;
+    background:none;
+    border:none;
+    color:var(--off-white);
+    padding:12px 12px;
+    border-radius:8px;
+    cursor:pointer;
+    font-family:'Inter',sans-serif;
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    gap:12px;
+  }
+  .timeline-item:hover, .timeline-item:focus-visible{background:var(--asphalt);}
+  .timeline-item:focus-visible{outline:2px solid var(--flag-red);outline-offset:-2px;}
+  .timeline-item.current{
+    background:rgba(216,162,74,.15);
+    border-left:3px solid var(--amber);
+  }
+  .timeline-item-label{
+    font-weight:500;
+    font-size:.95rem;
+  }
+  .timeline-item-time{
+    font-size:.75rem;
+    color:var(--muted);
+    white-space:nowrap;
+    font-variant-numeric:tabular-nums;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    button#spin, .light{transition:none;}
+  }
+</style>
+</head>
+<body>
+
+  <header>
+    <div class="eyebrow">906 five‑minute chunks · one 70‑hour run</div>
+    <h1>Random Grab</h1>
+    <p class="subhead">Hit the button. Get flung to a random slice of the full Mario&nbsp;Kart&nbsp;World playthrough, re‑encoded in glorious unnecessary 8K.</p>
+  </header>
+
+  <div class="stage">
+    <div class="pre-launch">
+      <div class="lights" id="lights" aria-hidden="true">
+        <div class="light"></div>
+        <div class="light"></div>
+        <div class="light"></div>
+      </div>
+
+      <button id="spin">Lights out, away we go</button>
+    </div>
+
+    <div class="result" id="result">
+      <div class="result-head">
+        <div class="result-head-left">
+          <div class="chunk-badge">Chunk <span id="chunkNum">—</span> <span class="chunk-of">of 906</span></div>
+          <div class="day-part" id="dayPart">—</div>
+        </div>
+        <button class="activity" id="activityBtn" type="button" aria-haspopup="dialog">—</button>
+      </div>
+
+      <div class="frame-wrap">
+        <div id="player"></div>
+      </div>
+
+      <div class="progress-label">
+        <span id="cumTime">—</span>
+        <span id="pctTime">—</span>
+      </div>
+      <div class="progress-track" id="progressTrack" role="slider" tabindex="0" aria-label="Jump to a point in the run" aria-valuemin="0" aria-valuemax="100">
+        <div class="progress-fill" id="progressFill" style="width:0%"></div>
+      </div>
+      <div class="scrub-hint">Click anywhere on the bar to jump straight to that point in the run</div>
+
+      <a class="fullvid-link" id="fullvidLink" href="#" target="_blank" rel="noopener">Watch this moment in the full 70‑hour video (lower quality) →</a>
+    </div>
+  </div>
+
+  <footer>
+    Recorded, split, and re‑encoded by hand · <a href="https://www.youtube.com/playlist?list=PLBkg1A9SEY_dwBrx7kmxvary55bpIfbXj" target="_blank" rel="noopener">full playlist on YouTube</a>
+  </footer>
+
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-header">
+        <h2 id="modalTitle">The whole run, blow by blow</h2>
+        <button class="modal-close" id="modalClose" aria-label="Close">✕</button>
+      </div>
+      <ul class="timeline-list" id="timelineList"></ul>
+    </div>
+  </div>
+
+<script src="https://www.youtube.com/iframe_api"></script>
+<script>
+let CLIPS = [];
+let TOTAL_SECONDS = 1;
+let TIMELINE = [];
+let ytPlayer = null;
+let ytReady = false;
+let currentIdx = null;
+let pendingIdx = null; // if pick requested before player ready
+let pendingSeek = 0;
+
+async function loadData(){
+  const res = await fetch('data.json');
+  const data = await res.json();
+  CLIPS = data.clips;
+  TOTAL_SECONDS = data.total_seconds || 1;
+  TIMELINE = data.timeline || [];
+  buildTimelineList();
+}
+
+function fmtHMS(sec){
+  const h = Math.floor(sec/3600);
+  const m = Math.floor((sec%3600)/60);
+  return h > 0 ? `${h}h ${m}m in` : `${m}m in`;
+}
+
+function parseDayPart(title){
+  const full = title.match(/W(\d+)\s*P(\d+)/i);
+  if(full) return `Day ${parseInt(full[1],10)}, Part ${parseInt(full[2],10)}`;
+  const dayOnly = title.match(/^W(\d+)$/i);
+  if(dayOnly) return `Day ${parseInt(dayOnly[1],10)}`;
+  return title;
+}
+
+// binary search: given a target cumulative second, find the clip index it falls in
+function clipIndexForTime(targetSec){
+  let lo = 0, hi = CLIPS.length - 1;
+  if(targetSec <= CLIPS[0].start) return 0;
+  while(lo < hi){
+    const mid = Math.ceil((lo + hi) / 2);
+    if(CLIPS[mid].start <= targetSec){
+      lo = mid;
+    } else {
+      hi = mid - 1;
+    }
+  }
+  return lo;
+}
+
+const lights = document.querySelectorAll('#lights .light');
+const spinBtn = document.getElementById('spin');
+const preLaunchEl = document.querySelector('.pre-launch');
+const resultEl = document.getElementById('result');
+const chunkNumEl = document.getElementById('chunkNum');
+const dayPartEl = document.getElementById('dayPart');
+const cumTimeEl = document.getElementById('cumTime');
+const pctTimeEl = document.getElementById('pctTime');
+const progressFill = document.getElementById('progressFill');
+const progressTrack = document.getElementById('progressTrack');
+const activityBtn = document.getElementById('activityBtn');
+const fullvidLink = document.getElementById('fullvidLink');
+const modalOverlay = document.getElementById('modalOverlay');
+const modalClose = document.getElementById('modalClose');
+const timelineListEl = document.getElementById('timelineList');
+
+function onYouTubeIframeAPIReady(){
+  ytPlayer = new YT.Player('player', {
+    playerVars: { autoplay: 1, rel: 0, playsinline: 1 },
+    events: {
+      'onReady': () => {
+        ytReady = true;
+        if(pendingIdx !== null){
+          const idx = pendingIdx;
+          const seek = pendingSeek;
+          pendingIdx = null;
+          pendingSeek = 0;
+          showClip(idx, seek);
+        }
+      },
+      'onStateChange': (e) => {
+        if(e.data === YT.PlayerState.ENDED){
+          advanceToNext();
+        }
+      }
+    }
+  });
+}
+window.onYouTubeIframeAPIReady = onYouTubeIframeAPIReady;
+
+async function runCountdown(){
+  spinBtn.disabled = true;
+  lights.forEach(l => l.classList.remove('on','go'));
+  for(let i=0;i<lights.length;i++){
+    await new Promise(r => setTimeout(r, 260));
+    lights[i].classList.add('on');
+  }
+  await new Promise(r => setTimeout(r, 260));
+  lights.forEach(l => l.classList.remove('on'));
+  lights.forEach(l => l.classList.add('go'));
+  await new Promise(r => setTimeout(r, 220));
+  lights.forEach(l => l.classList.remove('go'));
+  spinBtn.disabled = false;
+}
+
+function showClip(idx, withinClipSeconds){
+  currentIdx = idx;
+  const clip = CLIPS[idx];
+  const seekSeconds = Math.max(0, Math.min(clip.dur - 1, withinClipSeconds || 0));
+
+  chunkNumEl.textContent = idx + 1;
+  dayPartEl.textContent = parseDayPart(clip.title);
+  activityBtn.textContent = clip.activity || '—';
+
+  const pct = (clip.start / TOTAL_SECONDS) * 100;
+  progressFill.style.width = `${pct.toFixed(2)}%`;
+  progressTrack.setAttribute('aria-valuenow', pct.toFixed(1));
+  cumTimeEl.textContent = fmtHMS(clip.start + seekSeconds);
+  pctTimeEl.textContent = `${pct.toFixed(1)}% of the run`;
+
+  if(clip.fullvid){
+    fullvidLink.href = `https://www.youtube.com/watch?v=${clip.fullvid}&t=${clip.start + seekSeconds}s`;
+  }
+
+  resultEl.classList.add('show');
+  preLaunchEl.classList.add('hidden');
+
+  if(ytReady){
+    ytPlayer.loadVideoById({videoId: clip.id, startSeconds: seekSeconds});
+  } else {
+    pendingIdx = idx;
+    pendingSeek = seekSeconds;
+  }
+
+  spinBtn.textContent = 'Roll again';
+}
+
+function advanceToNext(){
+  if(currentIdx === null) return;
+  const nextIdx = (currentIdx + 1) % CLIPS.length;
+  showClip(nextIdx);
+}
+
+async function pickRandom(){
+  if(CLIPS.length === 0){
+    await loadData();
+  }
+  await runCountdown();
+  const idx = Math.floor(Math.random() * CLIPS.length);
+  showClip(idx);
+}
+
+async function seekToPct(clientX){
+  if(CLIPS.length === 0){
+    await loadData();
+  }
+  const rect = progressTrack.getBoundingClientRect();
+  const pct = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+  const targetSec = pct * TOTAL_SECONDS;
+  const idx = clipIndexForTime(targetSec);
+  const offset = targetSec - CLIPS[idx].start;
+  showClip(idx, offset);
+}
+
+function fmtHMSLong(sec){
+  const h = Math.floor(sec/3600);
+  const m = Math.floor((sec%3600)/60);
+  const s = Math.floor(sec%60);
+  const pad = n => String(n).padStart(2,'0');
+  return `${pad(h)}:${pad(m)}:${pad(s)}`;
+}
+
+function buildTimelineList(){
+  timelineListEl.innerHTML = '';
+  TIMELINE.forEach((seg) => {
+    const li = document.createElement('li');
+    const btn = document.createElement('button');
+    btn.className = 'timeline-item';
+    btn.type = 'button';
+    btn.dataset.start = seg.start;
+    btn.innerHTML = `<span class="timeline-item-label">${seg.label}</span><span class="timeline-item-time">${fmtHMSLong(seg.start)}</span>`;
+    btn.addEventListener('click', () => {
+      const idx = clipIndexForTime(seg.start);
+      const offset = seg.start - CLIPS[idx].start;
+      closeModal();
+      showClip(idx, offset);
+    });
+    li.appendChild(btn);
+    timelineListEl.appendChild(li);
+  });
+}
+
+function highlightCurrentSegment(){
+  if(currentIdx === null) return;
+  const t = CLIPS[currentIdx].start;
+  const items = timelineListEl.querySelectorAll('.timeline-item');
+  items.forEach(el => el.classList.remove('current'));
+  let match = null;
+  TIMELINE.forEach((seg, i) => {
+    if(t >= seg.start && t < seg.end){
+      match = i;
+    }
+  });
+  if(match !== null && items[match]){
+    items[match].classList.add('current');
+    items[match].scrollIntoView({block:'center'});
+  }
+}
+
+function openModal(){
+  modalOverlay.classList.add('show');
+  highlightCurrentSegment();
+  modalClose.focus();
+}
+function closeModal(){
+  modalOverlay.classList.remove('show');
+  activityBtn.focus();
+}
+
+activityBtn.addEventListener('click', openModal);
+modalClose.addEventListener('click', closeModal);
+modalOverlay.addEventListener('click', (e) => {
+  if(e.target === modalOverlay) closeModal();
+});
+document.addEventListener('keydown', (e) => {
+  if(e.key === 'Escape' && modalOverlay.classList.contains('show')) closeModal();
+});
+
+progressTrack.addEventListener('click', (e) => seekToPct(e.clientX));
+progressTrack.addEventListener('keydown', (e) => {
+  if(currentIdx === null) return;
+  if(e.key === 'ArrowRight'){ showClip(Math.min(CLIPS.length-1, currentIdx+1)); }
+  if(e.key === 'ArrowLeft'){ showClip(Math.max(0, currentIdx-1)); }
+});
+
+spinBtn.addEventListener('click', pickRandom);
+loadData();
+</script>
+
+</body>
+</html>
